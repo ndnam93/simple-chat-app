@@ -1,0 +1,53 @@
+version: '3.7'
+
+services:
+  mongodb:
+    image: mongo
+    restart: always
+    container_name: mongodb
+    ports:
+      - '27017-27019:27017-27019'
+    volumes: 
+      - ./db/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - dbdata:/data/db
+
+  nginx:
+    depends_on:
+      - api
+      - client
+    restart: always
+    build:
+      dockerfile: Dockerfile
+      context: ./nginx
+    ports:
+      - "80:80"
+
+  api:
+    container_name: api
+    build:
+      dockerfile: Dockerfile
+      context: ./server
+    depends_on:
+      - mongodb
+    volumes:
+      - /usr/src/node-app/node_modules
+      - ./server:/usr/src/node-app
+    env_file:
+      - ./server/.env
+
+  client:
+    container_name: client
+    build:
+      dockerfile: Dockerfile
+      context: ./client
+    depends_on:
+      - api
+    volumes:
+      - /app/node_modules
+      - ./client:/app
+    env_file:
+      - ./client/.env
+
+volumes:
+  dbdata:
+
