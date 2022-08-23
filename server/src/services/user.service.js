@@ -1,3 +1,4 @@
+const axios = require('axios');
 const httpStatus = require('http-status');
 const { User } = require('../models');
 const ApiError = require('../utils/ApiError');
@@ -11,6 +12,9 @@ const createUser = async (userBody) => {
   if (await User.isEmailTaken(userBody.email)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
   }
+  const response = await axios.get('https://picsum.photos/200');
+  userBody.profile_pic = response.request.res.responseUrl;
+
   return User.create(userBody);
 };
 
