@@ -28,6 +28,9 @@ const createUser = async (userBody) => {
  * @returns {Promise<QueryResult>}
  */
 const queryUsers = async (filter, options) => {
+  if (filter.name) {
+    filter.name = new RegExp(filter.name, 'i')
+  }
   const users = await User.paginate(filter, options);
   return users;
 };
