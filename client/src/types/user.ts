@@ -1,4 +1,5 @@
-export interface UserInfo {
+export interface User {
+  id: string
   role: string
   isEmailVerified: boolean
   name: string

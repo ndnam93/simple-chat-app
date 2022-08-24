@@ -1,6 +1,6 @@
 import { Navigate, RouteObject } from 'react-router-dom'
 import RequireAuth from '../components/routes/RequireAuth'
-import Chat from '../pages/Chat'
+import ChatApp from '../pages/ChatApp'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
 
@@ -21,7 +21,7 @@ const routes: RouteObject[] = [
     path: '/chat',
     element: (
       <RequireAuth>
-        <Chat />
+        <ChatApp />
       </RequireAuth>
     )
   }

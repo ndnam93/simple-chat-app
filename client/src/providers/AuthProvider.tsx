@@ -1,10 +1,10 @@
 import { createContext, PropsWithChildren, useContext, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
-import { UserInfo } from '../types/user'
+import { User } from '../types/user'
 
 interface LoginResponse {
-  user: UserInfo
+  user: User
   tokens: {
     access: {
       token: string
@@ -18,8 +18,9 @@ interface LoginResponse {
 }
 
 interface AuthContextProps {
-  user: Partial<UserInfo>
+  user: Partial<User>
   isLogged: boolean
+  accessToken: string
   onLogout: () => void
   onLogin: (response: LoginResponse) => void
 }
@@ -27,6 +28,7 @@ interface AuthContextProps {
 const AuthContext = createContext({
   user: {},
   isLogged: false,
+  accessToken: '',
   onLogout: () => {},
   onLogin: () => {}
 } as AuthContextProps)
@@ -48,7 +50,7 @@ export default function AuthProvider({ children }: PropsWithChildren<{}>) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLogged, onLogout, onLogin }}>
+    <AuthContext.Provider value={{ user, accessToken, isLogged, onLogout, onLogin }}>
       {children}
     </AuthContext.Provider>
   )
