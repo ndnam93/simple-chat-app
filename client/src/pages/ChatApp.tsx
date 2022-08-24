@@ -14,9 +14,10 @@ import {
   TypingIndicator,
   MessageSeparator,
 } from '@chatscope/chat-ui-kit-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import useFetch from 'use-http'
 import _ from 'lodash'
+import io from 'socket.io-client';
 
 import { LogoutButton } from '../components/LogoutButton'
 import { useAuth } from '../providers/AuthProvider'
@@ -24,18 +25,32 @@ import { User } from '../types/user'
 import { Chat } from '../types/chat'
 import { Message } from '../types/message'
 
+
+
+const socket = io({path: '/socket'}, { autoConnect: false });
+
 function ChatApp() {
   const { onLogout, user: loggedInUser } = useAuth()
   const [searchValue, setSearchValue] = useState('')
   const [messageInputValue, setMessageInputValue] = useState('')
   const [allUsers, setAllUsers] = useState<User[]>([])
-  const [chat, setChat] = useState<Chat>()
+  const [chat, _setChat] = useState<Chat>()
   const [currentUser, setCurrentUser] = useState<User>()
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, _setMessages] = useState<Message[]>([])
+
+  const chatRef = useRef(chat)
+  const setChat = (newChat: Chat) => {
+    chatRef.current = newChat;
+    _setChat(newChat);
+  }
+  const messagesRef = useRef(messages)
+  const setMessages = (newMessages: Message[]) => {
+    messagesRef.current = newMessages;
+    _setMessages(newMessages);
+  }
 
   const { get: getUsers } = useFetch('/users')
-  const { get: getChat } = useFetch('/chats')
-  const { get: getMessages, post: postMessage } = useFetch('/chats')
+  const chatRequest = useFetch('/chats')
 
   useEffect(_.debounce(() => {
     const params = new URLSearchParams();
@@ -54,17 +69,42 @@ function ChatApp() {
     allUsers.length && openChat(allUsers?.[0])
   }, [allUsers])
 
+  useEffect(() => {
+    socket.auth = { userId: loggedInUser.id }
+    socket.connect()
+    socket.on('connect', () => {
+      console.log('socket connected')
+    })
+    socket.on('NewMessage', (message) => {
+      console.log('New Message', message, chatRef.current)
+      const isInCurrentChat = message.chatId == chatRef.current?.id;
+      const isNotInList = !messagesRef?.current?.find(m => m.id == message.id)
+      if (isInCurrentChat && isNotInList) {
+        setMessages([...messagesRef?.current, message])
+      }
+    })
+    // socket.onAny((event, ...args) => {
+    //   console.log(event, args);
+    // })
+
+    return () => {
+      socket.off('connect');
+      socket.off('NewMessage');
+    };
+  }, [loggedInUser])
+
   const openChat = async (user: User) => {
-    console.log('open chat with', user)
     setCurrentUser(user)
-    const chat = await getChat(`?ids[]=${user.id}`)
+    const chat = await chatRequest.get(`?ids[]=${user.id}`)
+    console.log('open chat with', user, chat)
     setChat(chat)
-    const messages = await getMessages(chat.id + '/messages')
+    chatRequest.cache.clear()
+    const messages = await chatRequest.get(chat.id + '/messages')
     setMessages(messages)
   }
 
   const sendMessage = async (html: string, message: string) => {
-    await postMessage(chat.id + '/messages', { message })
+    await chatRequest.post(chat.id + '/messages', { message })
     setMessageInputValue('')
   }
 
@@ -108,6 +148,7 @@ function ChatApp() {
             const sender = message.sender === loggedInUser.id ? loggedInUser : currentUser as User
             return (
               <ChatMessage
+                key={message.id}
                 model={{
                   message: message.message,
                   sentTime: '15 mins ago',

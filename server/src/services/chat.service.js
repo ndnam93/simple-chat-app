@@ -1,9 +1,8 @@
-
 const httpStatus = require('http-status');
 
 const ApiError = require('../utils/ApiError');
 const { Chat, Message } = require('../models');
-
+const eventEmitter = require('../utils/event');
 
 /**
  * Get chat by id
@@ -45,7 +44,10 @@ const getMessages = async (chatId) => {
  * @returns {Promise<User>}
  */
 const createMessage = async (body) => {
-  return Message.create(body);
+  const message = await Message.create(body);
+  eventEmitter.emit('NewMessage',  message);
+
+  return message;
 };
 
 module.exports = {
