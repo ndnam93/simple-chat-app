@@ -12,12 +12,12 @@ import {
   Avatar,
   ConversationHeader,
   TypingIndicator,
-  MessageSeparator,
+  MessageSeparator
 } from '@chatscope/chat-ui-kit-react'
 import { useEffect, useRef, useState } from 'react'
 import useFetch from 'use-http'
 import _ from 'lodash'
-import io from 'socket.io-client';
+import io from 'socket.io-client'
 
 import { LogoutButton } from '../components/LogoutButton'
 import { useAuth } from '../providers/AuthProvider'
@@ -26,9 +26,7 @@ import { Chat } from '../types/chat'
 import { Message } from '../types/message'
 import { useReferredState } from '../hooks/useReferredState'
 
-
-
-const socket = io({path: '/socket'}, { autoConnect: false });
+const socket = io({ path: '/socket' }, { autoConnect: false })
 
 function ChatApp() {
   const { onLogout, user: loggedInUser } = useAuth()
@@ -42,18 +40,20 @@ function ChatApp() {
   const { get: getUsers } = useFetch('/users')
   const chatRequest = useFetch('/chats')
 
-  useEffect(_.debounce(() => {
-    const params = new URLSearchParams();
-    if (searchValue) {
-      params.set('name', searchValue)
-    }
-    getUsers('?' + params.toString())
-      .then(response => {
-        let { results = [] } = response;
+  useEffect(
+    _.debounce(() => {
+      const params = new URLSearchParams()
+      if (searchValue) {
+        params.set('name', searchValue)
+      }
+      getUsers('?' + params.toString()).then((response) => {
+        let { results = [] } = response
         results = results.filter((user: User) => user.id != loggedInUser.id)
-        setAllUsers(results);
+        setAllUsers(results)
       })
-  }, 1000), [searchValue])
+    }, 1000),
+    [searchValue]
+  )
 
   useEffect(() => {
     allUsers.length && openChat(allUsers?.[0])
@@ -70,8 +70,8 @@ function ChatApp() {
     })
     socket.on('NewMessage', (message) => {
       console.log('New message', message)
-      const isInCurrentChat = message.chatId == chatRef.current?.id;
-      const isNotInList = !messagesRef.current?.find(m => m.id == message.id)
+      const isInCurrentChat = message.chatId == chatRef.current?.id
+      const isNotInList = !messagesRef.current?.find((m) => m.id == message.id)
       if (isInCurrentChat && isNotInList) {
         setMessages([...messagesRef.current, message])
       }
@@ -85,7 +85,7 @@ function ChatApp() {
       socket.off('disconnect')
       socket.off('NewMessage')
       socket.disconnect()
-    };
+    }
   }, [loggedInUser])
 
   const openChat = async (user: User) => {
@@ -113,7 +113,12 @@ function ChatApp() {
             <LogoutButton onClick={onLogout} />
           </ConversationHeader.Actions>
         </ConversationHeader>
-        <Search placeholder="Search..." value={searchValue} onChange={setSearchValue} onClearClick={() => setSearchValue("")} />
+        <Search
+          placeholder="Search..."
+          value={searchValue}
+          onChange={setSearchValue}
+          onClearClick={() => setSearchValue('')}
+        />
         <ConversationList>
           {allUsers.map((user: User) => (
             <Conversation
@@ -121,10 +126,14 @@ function ChatApp() {
               name={user.name}
               onClick={() => openChat(user)}
               active={user.id == currentUser?.id}
-            // lastSenderName="Lilly"
-            // info="Yes i can do it for you"
+              // lastSenderName="Lilly"
+              // info="Yes i can do it for you"
             >
-              <Avatar name={user.name} src={user.profile_pic} status="available" />
+              <Avatar
+                name={user.name}
+                src={user.profile_pic}
+                status="available"
+              />
             </Conversation>
           ))}
         </ConversationList>
@@ -139,8 +148,11 @@ function ChatApp() {
         <MessageList
         // typingIndicator={<TypingIndicator content="Zoe is typing" />}
         >
-          {messages.map(message => {
-            const sender = message.sender === loggedInUser.id ? loggedInUser : currentUser as User
+          {messages.map((message) => {
+            const sender =
+              message.sender === loggedInUser.id
+                ? loggedInUser
+                : (currentUser as User)
             return (
               <ChatMessage
                 key={message.id}
@@ -148,7 +160,10 @@ function ChatApp() {
                   message: message.message,
                   sentTime: '15 mins ago',
                   sender: sender.name,
-                  direction: message.sender === loggedInUser.id ? 'outgoing' : 'incoming',
+                  direction:
+                    message.sender === loggedInUser.id
+                      ? 'outgoing'
+                      : 'incoming',
                   position: 'single'
                 }}
               >

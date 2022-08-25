@@ -1,20 +1,12 @@
 import { createContext, PropsWithChildren, useContext, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth'
+import { Tokens } from '../types/tokens'
 import { User } from '../types/user'
 
 interface LoginResponse {
   user: User
-  tokens: {
-    access: {
-      token: string
-      expires: string
-    }
-    refresh: {
-      token: string
-      expires: string
-    }
-  }
+  tokens: Tokens
 }
 
 interface AuthContextProps {
@@ -34,7 +26,8 @@ const AuthContext = createContext({
 } as AuthContextProps)
 
 export default function AuthProvider({ children }: PropsWithChildren<{}>) {
-  const { user, accessToken, setUser, setTokens, reset } = useAuthStore()
+  const { user, tokens, setUser, setTokens, reset } = useAuthStore()
+  const accessToken = tokens?.access?.token || ''
   const isLogged = !!accessToken
   let navigate = useNavigate()
 
@@ -45,12 +38,14 @@ export default function AuthProvider({ children }: PropsWithChildren<{}>) {
 
   const onLogin = ({ user, tokens }: LoginResponse) => {
     setUser(user)
-    setTokens(tokens.access.token, tokens.refresh.token)
+    setTokens(tokens)
     navigate('/chat')
   }
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, isLogged, onLogout, onLogin }}>
+    <AuthContext.Provider
+      value={{ user, accessToken, isLogged, onLogout, onLogin }}
+    >
       {children}
     </AuthContext.Provider>
   )
