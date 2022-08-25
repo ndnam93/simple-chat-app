@@ -24,6 +24,7 @@ import { useAuth } from '../providers/AuthProvider'
 import { User } from '../types/user'
 import { Chat } from '../types/chat'
 import { Message } from '../types/message'
+import { useReferredState } from '../hooks/useReferredState'
 
 
 
@@ -34,20 +35,9 @@ function ChatApp() {
   const [searchValue, setSearchValue] = useState('')
   const [messageInputValue, setMessageInputValue] = useState('')
   const [allUsers, setAllUsers] = useState<User[]>([])
-  const [chat, _setChat] = useState<Chat>()
+  const [chat, chatRef, setChat] = useReferredState<Chat | undefined>(undefined)
+  const [messages, messagesRef, setMessages] = useReferredState<Message[]>([])
   const [currentUser, setCurrentUser] = useState<User>()
-  const [messages, _setMessages] = useState<Message[]>([])
-
-  const chatRef = useRef(chat)
-  const setChat = (newChat: Chat) => {
-    chatRef.current = newChat;
-    _setChat(newChat);
-  }
-  const messagesRef = useRef(messages)
-  const setMessages = (newMessages: Message[]) => {
-    messagesRef.current = newMessages;
-    _setMessages(newMessages);
-  }
 
   const { get: getUsers } = useFetch('/users')
   const chatRequest = useFetch('/chats')
@@ -75,12 +65,15 @@ function ChatApp() {
     socket.on('connect', () => {
       console.log('socket connected')
     })
+    socket.on('disconnect', () => {
+      console.log('socket disconnected')
+    })
     socket.on('NewMessage', (message) => {
-      console.log('New Message', message, chatRef.current)
+      console.log('New message', message)
       const isInCurrentChat = message.chatId == chatRef.current?.id;
-      const isNotInList = !messagesRef?.current?.find(m => m.id == message.id)
+      const isNotInList = !messagesRef.current?.find(m => m.id == message.id)
       if (isInCurrentChat && isNotInList) {
-        setMessages([...messagesRef?.current, message])
+        setMessages([...messagesRef.current, message])
       }
     })
     // socket.onAny((event, ...args) => {
@@ -88,8 +81,10 @@ function ChatApp() {
     // })
 
     return () => {
-      socket.off('connect');
-      socket.off('NewMessage');
+      socket.off('connect')
+      socket.off('disconnect')
+      socket.off('NewMessage')
+      socket.disconnect()
     };
   }, [loggedInUser])
 
